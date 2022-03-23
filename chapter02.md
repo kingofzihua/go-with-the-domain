@@ -1,58 +1,90 @@
-# Building a serverless application with Google Cloud Run and Firebase
+# Building a serverless application with Google Cloud Run and Firebase 使用 Google Cloud Run 和 Firebase 构建无服务器应用程序
 
-Robert Laszczak
+Robert Laszczak 罗伯特·拉斯扎克
 
 Welcome to the first chapter covering how to build business-oriented applications in Go! In this book, we want to show
 you how to build applications that are easy to develop, maintain, and fun to work with in the long term.
+
+欢迎来到第一章，介绍如何在 Go 中构建面向业务的应用程序！在本书中，我们想向您展示如何构建易于开发、维护和长期使用的应用程序。
 
 The idea of this book is to not focus too much on infrastructure and implementation details. But we need to have some
 base on which we can build later. In this chapter, we start by covering some basic tools from Google Cloud that can help
 us to do that.
 
-Why serverless?
+本书的想法是不要过多地关注基础设施和实施细节。但我们需要有一些基础，以便我们以后可以建立。在这一章中，我们首先介绍 Google Cloud 的一些基本工具，它们可以帮助我们做到这一点。
+
+Why serverless? 为什么选择 serverless？
 
 **Running a Kubernetes cluster requires a lot of support from “DevOps teams”.** Let’s skip the fact that DevOps is not a
 job title for now.
 
+**运行一个Kubernetes集群需要 "DevOps团队 "的大量支持**。让我们暂时跳过DevOps不是一个工作头衔这一事实。
+
 ![Figure 2.1](./chapter02/ch0201.png)
 
 Figure 2.1: DevOps is a culture and mindset. It is not a job title! Slide from The gordian knot - Alberto Brandolini
+Figure 2.1: DevOps是一种文化和思维方式。它不是一个工作头衔! 幻灯片来自于《戈尔迪安结》 - 阿尔贝托·布兰多里尼
+
 Small applications that can be easily run on one virtual machine are now being deployed on super complex Kubernetes
 clusters. All these clusters require a lot of maintenance.
+
+可以很容易地在一台虚拟机上运行的小型应用程序，现在被部署在超级复杂的Kubernetes集群上。所有这些集群都需要大量的维护。
 
 On the other hand, moving applications to containers has given us much flexibility in building and deploying them. It
 allowed us to do rapid deployments of hundreds of microservices with a lot of autonomy. But the cost for that is high.
 
+另一方面，将应用程序转移到容器中，使我们在构建和部署它们时有了很大的灵活性。它使我们能够对数百个微服务进行快速部署，并具有很大的自主性。但这样做的成本很高。
+
 Wouldn’t it be great if any fully managed solution existed?
+
+如果存在一个完全托管的解决方案，那不是很好吗？
 
 Maybe your company is already using a managed Kubernetes cluster. If so, you probably already know that even your
 managed cluster still requires a ton of “DevOps” support.
 
+也许您的公司已经在使用托管 Kubernetes 集群。如果是这样，您可能已经知道，即使您的托管集群仍然需要大量的“DevOps”支持。
+
 Maybe serverless? Well, splitting a big application to multiple, independent Lambdas (Cloud Functions) is a great way to
 an unmaintainable cataclysm.
+
+也许无服务器？好吧，将一个大型应用程序拆分为多个独立的 Lambda（云函数）是解决不可维护灾难的好方法。
 
 ![Figure 2.2](./chapter02/ch0202.png)
 
 Figure 2.2: You should probably rethink your architecture if it can be used for summoning demons. But wait, is it the
 only way to build serverless applications? No!
 
+Figure 2.2: 如果它可以用于召唤恶魔，您可能应该重新考虑您的架构。但是等等，这是构建无服务器应用程序的唯一方法吗？不！ // 如果它未来可能带来灾难，您可能应该重新考虑您的架构
+
 ### Google Cloud Run
 
 The idea of Google Cloud Run is pretty simple - you **just need to provide a Docker container, and Google Cloud runs
 it.**
 
+Google Cloud Run的理念非常简单--**你只需要提供一个Docker容器，Google Cloud就可以运行它**。
+
 Inside this container, you can run an application written in any language that can expose a port with your HTTP or gRPC
 API.
 
+在这个容器内，你可以运行一个用任何语言编写的应用程序，它可以用你的 HTTP 或 gRPC API 暴露一个端口。
+
 You are not limited to synchronous processing – you can process Pub/Sub messages inside of this container.
 
-**And that’s all that you need from the infrastructure side. Google Cloud does all the magic. ** Based on the traﬀic,
-the container will automatically scale up and down. Sounds like a perfect solution ?
+你并不局限于同步处理--你可以在这个容器中处理Pub/Sub消息。
 
-In practice, it is not so simple. There are many articles showing how to use Google Cloud Run, but they usually show **
-small bricks that may be used for building an application**.
+**And that’s all that you need from the infrastructure side. Google Cloud does all the magic**. Based on the traﬀic, the
+container will automatically scale up and down. Sounds like a perfect solution ?
+
+**这就是你在基础设施方面所需要的一切。谷歌云做所有的魔法**。 基于traﬀic，容器将自动扩大和缩小。听起来像是一个完美的解决方案？
+
+In practice, it is not so simple. There are many articles showing how to use Google Cloud Run, but they usually show
+**small bricks that may be used for building an application**.
+
+在实践中，事情并不是那么简单。有很多文章展示了如何使用 Google Cloud Run，但它们通常显示 **可用于构建应用程序的小部分**。
 
 **It’s hard to join all these bricks from multiple places to create a fully working project** (been there, done that).
+
+很难将所有这些来自多个地方的砖块连接起来，形成一个完整的工作项目。(亲身经历过)
 
 In most cases, these articles leave out the problem of vendor lock-in. The deployment method should be just an
 implementation detail. I’ve already covered this topic in
