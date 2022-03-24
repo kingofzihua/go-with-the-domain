@@ -1,29 +1,43 @@
-## gRPC communication on Google Cloud Run
+## gRPC communication on Google Cloud Run / 在 Google Cloud Run 上使用 gRPC 通信
 
-Robert Laszczak
+Robert Laszczak / 罗伯特·拉斯扎克
 
 In this chapter we show how you can **build robust, internal communication between your services using gRPC**. We also
 cover some extra configuration required to set up authentication and TLS for the Cloud Run.
 
-### Why gRPC?
+在本章中，我们将展示如何**使用gRPC在你的服务之间建立强大的内部通信**。我们还介绍了为 Cloud Run 设置身份验证和 TLS 所需的一些额外配置。
+
+### Why gRPC? / 为什么选择 gRPC？
 
 Let’s imagine a story, that is true for many companies:
+
+让我们想象一个故事，对于许多公司来说都是如此：
 
 Meet Dave. Dave is working in a company that spent about 2 years on building their product from scratch. During this
 time, they were pretty successful in finding thousands of customers, who wanted to use their product. They started to
 develop this application during the biggest “boom” for microservices. It was an obvious choice for them to use that kind
 of architecture. Currently, they have more than 50 microservices using HTTP calls to communicate with each other.
 
+认识Dave。Dave 在一家公司工作，该公司花了大约 2 年时间从头开始构建他们的产品。在此期间，他们非常成功地找到了成千上万想要使用他们产品的客户。
+他们在微服务“最火的”时期开始开发这个应用程序。对他们来说，使用这种架构是一个明显的选择。目前，他们有50多个微服务使用HTTP调用来相互通信。
+
 Of course, Dave’s company didn’t do everything perfectly. The biggest pain is that currently all engineers are afraid to
 change anything in HTTP contracts. It is easy to make some changes that are not compatible or not returning valid data.
 It’s not rare that the entire application is not working because of that. “Didn’t we built microservices to avoid that?”
 – this is the question asked by scary voices in Dave’s head every day.
 
+当然，Dave的公司并不是每件事都做得很完美。最痛苦的是，目前所有工程师都害怕更改 HTTP 协议中的任何内容。很容易做一些不兼容或不返回有效数据的更改。因为这个原因，整个应用程序无法工作的情况并不罕见。
+我们建立微服务不是为了避免这种情况吗？- 这是 Dave 每天脑海中可怕的声音所问的问题。
+
 Dave already proposed to use OpenAPI for generating HTTP server responses and clients. But he shortly found that he
 still can return invalid data from the API.
 
+Dave已经提议使用OpenAPI来生成HTTP服务器响应和客户端。但他很快发现，他仍然可以从API返回无效的数据。
+
 It doesn’t matter if it (already) sounds familiar to you or not. The solution for Dave’s company is simple and
 straightforward to implement. **You can easily achieve robust contracts between your services by using gRPC**.
+
+如果它（已经）对你来说听起来很熟悉或不熟悉，这并不重要。Dave 公司的解决方案简单易行。**你可以通过使用gRPC轻松实现你的服务之间的强大契约**。
 
 ![](./chapter03/ch0301.png)
 
@@ -32,35 +46,57 @@ straightforward to implement. **You can easily achieve robust contracts between 
 The way of how servers and clients are generated from gRPC is way much stricter than OpenAPI. It’s needless to say that
 it’s infinitely better than the OpenAPI’s client and server that are just copying the structures.
 
+gRPC生成服务器和客户端的方式比OpenAPI要严格得多。不用说，它比OpenAPI的客户端和服务器只是复制结构要好得多。
+
 > It’s important to remember that gRPC doesn’t solve the **data quality problems**. In other words – you can still send data that is not empty, but doesn’t make sense. It’s important to ensure that data is valid on many levels, like the robust contract, contract testing, and end-to-end testing.
+>
+> 重要的是要记住，gRPC并不能解决数据质量问题。换句话说--你仍然可以发送不是空的、但没有意义的数据。重要的是要确保数据在很多层面上是有效的，比如说健全的合同、合同测试和端到端的测试。
 
 Another important “why” may be performance. You can find many studies that **gRPC may be even 10x faster than REST**.
 When your API is handling millions of millions of requests per second, it may be a case for cost optimization. In the
 context of applications like Wild Workouts, where traﬀic may be less than 10 requests/sec, **it doesn’t matter**.
 
+另一个重要的“原因”可能是性能。你可以找到许多研究，**gRPC甚至可能比REST快10倍**。当你的API每秒处理数以百万计的请求时，可能就会出现成本优化的情况。在像Wild Workouts这样的应用背景下，traffic
+可能少于10个请求/秒，这并不重要。
+
 To be not biased in favor of using gRPC, I tried to find any reason not to use it for internal communication. I failed
 here:
+
+为了不偏向于使用gRPC，我试图找到任何不使用它进行内部通信的理由。我在这里失败了：
 
 - **the entry point is low**,
 - adding a gRPC server doesn’t need any extra infrastructure work – it works on top of HTTP/2,
 - it workis with many languages like Java, C/C++, Python, C#, JS,
   and [more](https://grpc.io/about/#officially-supported-languages-and-platforms)
-- in theory, you are even able to use gRPC for the [frontend communication](https://grpc.io/blog/state-of-grpc-web/) (I
+- in theory, you are even able to use gRPC for [the frontend communication](https://grpc.io/blog/state-of-grpc-web/) (I
   didn’t test that),
 - it’s “Goish” – **the compiler ensures that you are not returning anything stupid**.
 
+- 入口点低。
+- 添加一个gRPC服务器不需要任何额外的基础设施工作--它在HTTP/2的基础上工作。
+- 它与许多语言如Java、C/C++、Python、C#、JS [等](https://grpc.io/about/#officially-supported-languages-and-platforms) 兼容。
+- 理论上，你甚至可以使用gRPC进行 [前端通信](https://grpc.io/blog/state-of-grpc-web/) （我没有测试）。
+- 它是 "Goish"- **编译器确保你不会返回任何愚蠢的东西**。
+
 Sounds promising? Let’s verify that with the implementation in Wild Workouts!
 
-### Generated server
+听起来很棒？让我们通过 Wild Workouts 中的实现来验证这一点！
+
+### Generated server / 生成的服务器
 
 Currently, we don’t have a lot of gRPC endpoints in Wild Workouts. We can update trainer hours availability and user
 training balance (credits).
 
-Let’s check Trainer gRPC service. To define our gRPC server, we need to create trainer.proto file.
+目前，我们在Wild Workouts中没有大量的gRPC端点。我们可以更新培训师的可用时间和用户培训余额（学分）。
+
+Let’s check Trainer gRPC service. To define our gRPC server, we need to create `trainer.proto` file.
+
+让我们检查一下Trainer gRPC服务。为了定义我们的gRPC服务器，我们需要创建trainer.proto文件。
 
 ![](./chapter03/ch0302.png)
 
 <center> Figure 3.2: Architecture </center>
+<center> Figure 3.2: 架构 </center>
 
 ```protobuf
 syntax = "proto3";
@@ -92,9 +128,11 @@ message UpdateHourRequest {
 message EmptyResponse {}
 ```
 
-Source: trainer.proto on [GitHub](https://bit.ly/3blVhna)
+Source: [trainer.proto on GitHub](https://bit.ly/3blVhna)
 
-The .proto definition is converted into Go code by using Protocol Buffer Compiler (protoc).
+The `.proto` definition is converted into Go code by using Protocol Buffer Compiler (protoc).
+
+`.proto` 定义通过使用 Protocol Buffer Compiler (protoc) 转换为 Go 代码。
 
 ```makefile
 .PHONY: proto
@@ -103,11 +141,15 @@ proto:
     protoc --go_out=plugins=grpc:internal/common/genproto/users -I api/protobuf api/protobuf/users.proto
 ```
 
-Source: Makefile on [GitHub](https://bit.ly/3aEAsnE)
-> To generate Go code from .proto you need to install [protoc](https://grpc.io/docs/protoc-installation/) and protoc [Go Plugin](https://grpc.io/docs/quickstart/go/). A list of supported types can be found in Protocol Buffers Version 3 [Language Specification](https://developers.google.com/protocol-buffers/docs/reference/proto3-spec#fields). More complex built-in types like Timestamp can be found in Well-Known Types [list](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf)
+Source: [Makefile on GitHub](https://bit.ly/3aEAsnE)
+> To generate Go code from .proto you need to install [protoc](https://grpc.io/docs/protoc-installation/) and [protoc  Go Plugin](https://grpc.io/docs/quickstart/go/). A list of supported types can be found in  [Protocol Buffers Version 3 Language Specification](https://developers.google.com/protocol-buffers/docs/reference/proto3-spec#fields). More complex built-in types like Timestamp can be found in [Well-Known Types list](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf)
+>
+> 要从 .proto 生成 Go 代码，您需要安装 [protoc](https://grpc.io/docs/protoc-installation/) 和 [protoc  Go Plugin](https://grpc.io/docs/quickstart/go/)。可以在 [Protocol Buffers Version 3 Language Specification](https://developers.google.com/protocol-buffers/docs/reference/proto3-spec#fields) 中找到支持的类型列表。可以在 [Well-Known Types](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf) 列表中找到更复杂的内置类型，例如 Timestamp
 
 
 This is how an example generated model looks like:
+
+这是一个生成模型的例子:
 
 ```go
 package trainer
@@ -121,9 +163,11 @@ type UpdateHourRequest struct {
 }
 ```
 
-Source: trainer.pb.go on [GitHub](https://bit.ly/37yjVjc)
+Source: [trainer.pb.go on GitHub](https://bit.ly/37yjVjc)
 
 And the server:
+
+和服务：
 
 ```go
 package trainer
@@ -134,24 +178,34 @@ type TrainerServiceServer interface {
 }
 ```
 
-Source: trainer.pb.go on [GitHub](https://bit.ly/3dwBjIN)
+Source: [trainer.pb.go on GitHub](https://bit.ly/3dwBjIN)
 
 The difference between HTTP and gRPC is that in gRPC we don’t need to take care of what we should return and how to do
 that. If I would **compare the level of confidence with HTTP and gRPC, it would be like comparing Python and Go**. This
 way is much more strict, and it’s impossible to return or receive any invalid values – **compiler will let us know about
 that**.
 
-Protobuf also has built-in ability to handle deprecation of fields and handling backward-compatibility7. That’s pretty
-helpful in an environment with many independent teams.
+HTTP 和 gRPC 之间的区别在于，在 gRPC 中我们不需要关心我们应该返回什么以及如何返回。如果我要**比较HTTP和gRPC的可信度，那就像比较Python和Go一样**。这种方式更加严格，不可能返回或接收任何无效的值 --
+编译器会让我们知道这一点。
+
+Protobuf also has built-in ability to handle deprecation of fields and
+handling [backward-compatibility](https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility-issues)
+. That’s pretty helpful in an environment with many independent teams.
+
+Protobuf也有内置的能力来处理字段的废弃和处理[向后兼容](https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility-issues)。这在有许多独立团队的环境中是相当有帮助的。
 
 ### Protobuf vs gRPC
 
 > Protobuf (Protocol Buffers) is Interface Definition Language used by default for defining the service interface and the structure of the payload. Protobuf is also used for serializing these models to binary format.
->
+> Protobuf（Protocol Buffers）是默认使用的接口定义语言，用于定义服务接口和 payload 的结构。 Protobuf 还用于将这些模型序列化为二进制格式。
+> 
 > You can find more details about gRPC and Protobuf on gRPC [Concepts](https://grpc.io/docs/guides/concepts/) page.
+> 你可以在 gRPC [Concepts](https://grpc.io/docs/guides/concepts/) 页面上找到更多关于gRPC和Protobuf的细节。
 
 Implementing the server works in almost the same way as in HTTP generated by [OpenAPI](./chapter02.md) – we need to
-implement an interface (`TrainerServiceServer in that case).
+implement an interface ( `TrainerServiceServer` in that case).
+
+实现服务器的工作方式与 [OpenAPI](./chapter02.md) 生成的HTTP中的工作方式几乎相同 -- 我们需要实现一个接口（在这种情况下为 `TrainerServiceServer` ）。
 
 ```go
 package main
@@ -180,7 +234,7 @@ func (g GrpcServer) IsHourAvailable(ctx context.Context, req *trainer.IsHourAvai
 
 ```
 
-Source: grpc.go on [GitHub](https://bit.ly/3pG9SPj)
+Source: [grpc.go on GitHub](https://bit.ly/3pG9SPj)
 
 As you can see, you cannot return anything else than `IsHourAvailableResponse`, and you can always be sure that you will
 receive `IsHourAvailableRequest`. In case of an error, you can return one of predefined error codes10. They are more
@@ -205,7 +259,7 @@ func main() {
 }
 ```
 
-Source: main.go on [GitHub](https://bit.ly/2ZCKnDQ)
+Source: [main.go on GitHub](https://bit.ly/2ZCKnDQ)
 
 ### Internal gRPC client
 
@@ -230,7 +284,7 @@ func NewTrainerServiceClient(cc grpc.ClientConnInterface) TrainerServiceClient {
 
 ```
 
-Source: trainer.pb.go on [GitHub](https://bit.ly/3k8V5vo)
+Source: [trainer.pb.go on GitHub](https://bit.ly/3k8V5vo)
 
 To make generated client work, we need to pass a couple of extra options. They will allow handling:
 
@@ -265,7 +319,7 @@ func NewTrainerClient() (client trainer.TrainerServiceClient, close func() error
 }
 ```
 
-Source: grpc.go on [GitHub](https://bit.ly/2M94vKJ)
+Source: [grpc.go on GitHub](https://bit.ly/2M94vKJ)
 
 After our client is created we can call any of its methods. In this example, we call `UpdateHour` while creating a
 training.
@@ -306,7 +360,7 @@ func (h HttpServer) CreateTraining(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-Source: http.go on [GitHub](https://bit.ly/3aDglGr)
+Source: [http.go on GitHub](https://bit.ly/3aDglGr)
 
 ### Cloud Run authentication & TLS
 
@@ -369,7 +423,7 @@ func (metadataServerToken) RequireTransportSecurity() bool {
 }
 ```
 
-Source: auth.go on [GitHub](https://bit.ly/3k62Y4N)
+Source: [auth.go on GitHub](https://bit.ly/3k62Y4N)
 
 The last thing is passing it to the `[]grpc.DialOption` list passed when creating all gRPC clients.
 
@@ -398,7 +452,7 @@ func grpcDialOpts(grpcAddr string) ([]grpc.DialOption, error) {
 }
 ```
 
-Source: grpc.go on [GitHub](https://bit.ly/2ZAMMz2)
+Source: [grpc.go on GitHub](https://bit.ly/2ZAMMz2)
 
 ### Are all the problems of internal communication solved?
 
