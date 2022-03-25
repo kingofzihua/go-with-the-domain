@@ -198,7 +198,7 @@ Protobuf也有内置的能力来处理字段的废弃和处理[向后兼容](htt
 
 > Protobuf (Protocol Buffers) is Interface Definition Language used by default for defining the service interface and the structure of the payload. Protobuf is also used for serializing these models to binary format.
 > Protobuf（Protocol Buffers）是默认使用的接口定义语言，用于定义服务接口和 payload 的结构。 Protobuf 还用于将这些模型序列化为二进制格式。
-> 
+>
 > You can find more details about gRPC and Protobuf on gRPC [Concepts](https://grpc.io/docs/guides/concepts/) page.
 > 你可以在 gRPC [Concepts](https://grpc.io/docs/guides/concepts/) 页面上找到更多关于gRPC和Protobuf的细节。
 
@@ -237,10 +237,16 @@ func (g GrpcServer) IsHourAvailable(ctx context.Context, req *trainer.IsHourAvai
 Source: [grpc.go on GitHub](https://bit.ly/3pG9SPj)
 
 As you can see, you cannot return anything else than `IsHourAvailableResponse`, and you can always be sure that you will
-receive `IsHourAvailableRequest`. In case of an error, you can return one of predefined error codes10. They are more
-up-to-date nowadays than HTTP status codes.
+receive `IsHourAvailableRequest`. In case of an error, you can return one of
+predefined [error codes](https://godoc.org/google.golang.org/grpc/codes#Code). They are more up-to-date nowadays than
+HTTP status codes.
 
-Starting the gRPC server is done in the same way as with HTTP server
+正如你所看到的，除了 `IsHourAvailableResponse`，你不能返回任何其他东西，而且你总是可以确定你将收到 `IsHourAvailableRequest`。
+在出现错误的情况下，你可以返回一个预定义的 [错误代码](https://godoc.org/google.golang.org/grpc/codes#Code) 。它们比HTTP状态代码更符合当今时代的要求。
+
+Starting the gRPC server is done in the same way as with HTTP server:
+
+启动 gRPC 服务器的方式与使用 HTTP 服务器的方式相同：
 
 ```go
 package main
@@ -261,10 +267,12 @@ func main() {
 
 Source: [main.go on GitHub](https://bit.ly/2ZCKnDQ)
 
-### Internal gRPC client
+### Internal gRPC client / 内部 gRPC 客户端
 
 After our server is running, it’s time to use it. First of all, we need to create a client
 instance. `trainer.NewTrainerServiceClient` is generated from `.proto`.
+
+在我们的服务器运行之后，就该使用它了。首先，我们需要创建一个客户端实例。 `trainer.NewTrainerServiceClient` 是从 `.proto` 生成的。
 
 ```go
 package trainer
@@ -290,8 +298,14 @@ To make generated client work, we need to pass a couple of extra options. They w
 
 - authentication
 - TLS encryption
-- “service discovery” (we use hardcoded names of services provided by [Terraform](./chapter14.md) via TRAINER_GRPC_ADDR
-  env).
+- “service discovery” (we use hardcoded names of services provided by [Terraform](./chapter14.md)
+  via `TRAINER_GRPC_ADDR` env).
+
+为了使生成的客户端工作，我们需要传递几个额外的选项。它们将允许处理：
+
+- 认证
+- TLS 加密
+- “服务发现” (我们使用 [Terraform](./chapter14.md) 通过 `TRAINER_GRPC_ADDR` env 硬编码服务的名称)
 
 ```go
 package client
@@ -323,6 +337,8 @@ Source: [grpc.go on GitHub](https://bit.ly/2M94vKJ)
 
 After our client is created we can call any of its methods. In this example, we call `UpdateHour` while creating a
 training.
+
+在我们的客户端被创建后，我们可以调用它的任何方法。在这个例子中，我们在创建训练时调用`UpdateHour`。
 
 ```go
 package main
@@ -362,22 +378,31 @@ func (h HttpServer) CreateTraining(w http.ResponseWriter, r *http.Request) {
 
 Source: [http.go on GitHub](https://bit.ly/3aDglGr)
 
-### Cloud Run authentication & TLS
+### Cloud Run authentication & TLS / Cloud Run 身份验证和 TLS
 
 Authentication of the client is handled by Cloud Run out of the box. The simpler (and recommended by us) way is using
 Terraform. We describe it in details in [Setting up infrastructure with Terraform (Chapter 14)](./chapter14.md).
 
+客户端的认证是由Cloud Run开箱即用。更简单的（也是我们推荐的）方法是使用Terraform。我们在 [《用Terraform 建立基础设施》（第14章）](./chapter14.md) 中详细描述了这一点。
+
 One thing that doesn’t work out of the box is sending authentication with the request. Did I already mention that
 standard gRPC transport is HTTP/2? For that reason, we can just use the old, good JWT for that.
+
+有一件事在开箱后并不奏效，那就是随请求发送认证。我是否已经提到，标准的 gRPC 传输是 HTTP/2？出于这个原因，我们可以使用老的、好的JWT来做这个。
 
 To make it work, we need to implement `google.golang.org/grpc/credentials.PerRPCCredentials` interface. The
 implementation is based on the official guide
 from [Google Cloud Documentation](https://cloud.google.com/run/docs/authenticating/service-to-service#go).
 
+为了使其工作，我们需要实现 `google.golang.org/grpc/credentials.PerRPCCredentials`
+接口。这个实现是基于 [Google Cloud 文档](https://cloud.google.com/run/docs/authenticating/service-to-service#go) 的官方指南。
+
 ![](./chapter03/ch0303.png)
 
 <center>Figure 3.3: You can also enable Authentication from Cloud Run UI. You need to also grant the roles/run.invoker
 role to service’s service account.</center> 
+
+<center>Figure 3.3: 你也可以从 Cloud Run 界面启用认证。你还需要向服务的服务账户授予 role/run.invoker 角色。</center> 
 
 ```go
 package client
@@ -427,9 +452,15 @@ Source: [auth.go on GitHub](https://bit.ly/3k62Y4N)
 
 The last thing is passing it to the `[]grpc.DialOption` list passed when creating all gRPC clients.
 
+最后是把它传递给创建所有 gRPC 客户端时传递的 `[]grpc.DialOption` 列表。
+
 It’s also a good idea to ensure that the our server’s certificate is valid with `grpc.WithTransportCredentials`.
 
+使用 `grpc.WithTransportCredentials` 确保我们服务器的证书有效也是一个好主意。
+
 Authentication and TLS encryption are disabled on the local Docker environment.
+
+在本地 Docker 环境中禁用身份验证和 TLS 加密。
 
 ```go
 package client
@@ -454,9 +485,11 @@ func grpcDialOpts(grpcAddr string) ([]grpc.DialOption, error) {
 
 Source: [grpc.go on GitHub](https://bit.ly/2ZAMMz2)
 
-### Are all the problems of internal communication solved?
+### Are all the problems of internal communication solved? / 内部沟通的所有问题都解决了吗？
 
 **A hammer is great for hammering nails but awful for cutting a tree. The same applies to gRPC or any other technique**.
+
+**锤子用来敲打钉子很好，但用不能用来砍树。gRPC和任何其他技术一样。**
 
 **gRPC works great for synchronous communication, but not every process is synchronous by nature. Applying synchronous
 communication everywhere will end up creating a slow, unstable system**. Currently, Wild Workouts doesn’t have any flow
@@ -464,13 +497,21 @@ that should be asynchronous. We will cover this topic deeper in the next chapter
 meantime, you can check [Watermill](http://watermill.io/) library, which was also created by us. It helps with building
 asynchronous, event-driven applications the easy way.
 
+**gRPC对于同步通信非常有效，但并不是每个进程都是同步的。在所有地方应用同步通信最终会产生一个缓慢、不稳定的系统。** 目前，Wild Workouts
+没有任何应该是异步的流程。我们将在接下来的章节中通过实现新的功能来深入探讨这个话题。同时，你可以查看 [Watermill](http://watermill.io/)
+库，它也是由我们创建的。它有助于以简单的方式构建异步的、事件驱动的应用程序。
+
 ![](./chapter03/ch0304.png)
 <center>Figure 3.4: Watermill</center>
 
-### What’s next?
+### What’s next? / 下一步是什么？
 
 Having robust contracts doesn’t mean that we are not introducing unnecessary internal communication. In some cases
 operations can be done in one service in a simpler and more pragmatic way.
 
+拥有健全的合同并不意味着我们没有引入不必要的内部沟通。在某些情况下，操作可以在一个服务中以更简单和更务实的方式完成。
+
 It is not simple to avoid these issues. Fortunately, we know techniques that are successfully helping us with that. We
 will share that with you soon.
+
+要避免这些问题并不简单。幸运的是，我们知道一些技术，正在成功地帮助我们解决这个问题。我们将很快与你分享。
