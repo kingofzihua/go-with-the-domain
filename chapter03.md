@@ -402,6 +402,7 @@ from [Google Cloud Documentation](https://cloud.google.com/run/docs/authenticati
 <center>Figure 3.3: You can also enable Authentication from Cloud Run UI. You need to also grant the roles/run.invoker
 role to service’s service account.</center> 
 
+
 <center>Figure 3.3: 你也可以从 Cloud Run 界面启用认证。你还需要向服务的服务账户授予 role/run.invoker 角色。</center> 
 
 ```go
