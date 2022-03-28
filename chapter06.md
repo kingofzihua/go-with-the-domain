@@ -1,9 +1,11 @@
-## Domain-Driven Design Lite
+## Domain-Driven Design Lite / 领域驱动设计精简版
 
-Robert Laszczak
+Robert Laszczak / 罗伯特·拉斯扎克
 
 When I started working in Go, the community was not looking positively on techniques like DDD (Domain-Driven Design) and
 Clean Architecture. I heard multiple times: “Don’t do Java in Golang!”, “I’ve seen that in Java, please don’t!”.
+
+当我开始在 Go 中工作时，社区对 DDD（领域驱动设计）和清洁架构等技术并不积极。我多次听到：“不要在 Golang 中做 Java！”，“我在 Java 中看到过，请不要这样做！”。
 
 These times, I already had almost 10 years of experience in PHP and Python. I’ve seen too many bad things already there.
 I remember all these “Eight-thousanders” (methods with +8k lines of code ) and applications that nobody wanted to
@@ -11,51 +13,76 @@ maintain. I was checking old git history of these ugly monsters, and they all lo
 time, small, innocent problems started to become more significant and more serious. I’ve also seen how DDD and Clean
 Architecture solved these issues.
 
+这些时候，我已经有将近 10 年的 PHP 和 Python 经验。我已经在那里看到了太多不好的事情。我记得所有这些“八千”（具有 +8k 行代码的方法）和没人想维护的应用程序。 我正在检查这些丑陋怪物的旧 git
+历史，它们一开始看起来都无害。但随着时间的推移，一些小的、无辜的问题开始变得越来越重要，越来越严重。我也看到了DDD和清洁架构是如何解决这些问题的。
+
 Maybe Golang is different? Maybe writing microservices in Golang will fix this issue?
 
-### It was supposed to be so beautiful
+也许 Golang 不一样？也许用 Golang 编写微服务可以解决这个问题？
+
+### It was supposed to be so beautiful / 它本应是如此美丽的
 
 Now, after exchanging experience with multiple people and having the ability to see a lot of codebases, my point of view
 is a bit cleaner than 3 years ago. Unfortunately, I’m now far from thinking that just using Golang and microservices
 will save us from all of these issues that I’ve encountered earlier. I started to actually have flashbacks from the old,
 bad times.
 
+现在，在和多人交流经验并有能力看很多代码库之后，我的观点比 3 年前干净了一点。不幸的是，我现在还没有想到仅仅使用 Golang 和微服务就能让我们摆脱之前遇到的所有这些问题。实际上，我开始回想起过去糟糕的时光。
+
 It’s less visible because of the relatively younger codebase. It’s less visible because of the Golang design. But I’m
 sure that with time, we will have more and more legacy Golang applications that nobody wants to maintain.
+
+由于相对年轻的代码库，它不太明显。由于 Golang 设计，它不太明显。但我敢肯定，随着时间的推移，我们将拥有越来越多没人愿意维护的遗留 Golang 应用程序。
 
 Fortunately, 3 years ago, despite to chilly reception I didn’t give up. I decided to try to use DDD and related
 techniques that worked for me previously in Go. With Milosz we were leading teams for 3 years that were all successfully
 using DDD, Clean Architecture, and all related, not-popular-enough techniques in Golang. They gave us the ability to
 develop our applications and products with constant velocity, regardless of the age of the code.
 
+幸运的是，3年前，尽管受到了冷遇，但我并没有放弃。我决定尝试使用DDD和相关技术，这些技术以前在Go中对我很有效。与Milosz一起，我们领导的团队在3年内都成功地使用了DDD、Clean
+Architecture以及所有相关的、在Golang中不够流行的技术。它们使我们能够以恒定的速度开发我们的应用程序和产品，而不管代码的年龄如何。
+
 It was obvious from the beginning, that moving patterns 1:1 from other technologies will not work. What is essential, we
 did not give up idiomatic Go code and microservices architecture - they fit together perfectly!
 Today I would like to share with you first, most straightforward technique – DDD lite.
 
-### State of DDD in Golang
+从一开始就很明显，从其他技术中以 1:1 的方式移动模式是行不通的。最重要的是，我们没有放弃惯用的 Go 代码和微服务架构——它们完美地结合在一起！今天先跟大家分享一下最直接的技术 —— DDD lite。
+
+### State of DDD in Golang / Golang 中的 DDD 现状
 
 Before sitting to write this chapter, I checked a couple of articles about DDD in Go in Google. I will be brutal here:
 they are all missing the most critical points making DDD working. **If I imagine that I would read these articles
 without any DDD knowledge, I would not be encouraged to use them in my team. This superficial approach may also be the
 reason why DDD is still not socialized in the Go community**.
 
+在坐下来写这一章之前，我在Google上查看了几篇关于Go中的DDD的文章。我在这里要粗暴地指出：他们都忽略了使DDD发挥作用的最关键点。**如果我想象我会在没有任何 DDD
+知识的情况下阅读这些文章，我不会被鼓励在我的团队中使用它们。这种肤浅的做法也可能是 DDD 在 Go 社区中仍然没有社交化的原因。**
+
 In this book, we try to show all essential techniques and do it in the most pragmatic way. Before describing any
 patterns, we start with a question: what does it give us? It’s an excellent way to challenge our current thinking.
+
+在本书中，我们试图展示所有基本技术，并以最实用的方式进行。在描述任何模式之前，我们先从一个问题开始：它给了我们什么？这是挑战我们当前思维的绝佳方式。
 
 I’m sure that we can change the Go community reception of these techniques. We believe that they are the best way to
 implement complex business projects. **I believe that we will help to establish the position of Go as a great language
 for building not only infrastructure but also business software**.
 
-### You need to go slow, to go fast
+我确信我们可以改变 Go 社区对这些技术的接受程度。我们相信，它们是实现复杂业务项目的最佳方式。
+
+### You need to go slow, to go fast / 你需要走得慢一点，才能走得快一点
 
 It may be tempting to implement the project you work on in the simplest way. It’s even more tempting when you feel
 pressure from “the top”. Are we using microservices, though? If it is needed, will we just rewrite the service? I heard
 that story multiple times, and it rarely ended with a happy end. **It’s true that you will save some time with taking
 shortcuts. But only in the short term**.
+以最简单的方式实施您从事的项目可能很诱人。当你感受到来自“上层”的压力时，它就更诱人了。但是，我们是否在使用微服务？如果需要，我们会重写服务吗？我多次听到这个故事，但它很少以一个快乐的结局结束。
+**确实，走捷径可以节省一些时间。但仅在短期内。**
 
 Let’s consider the example of tests of any kind. You can skip writing tests at the beginning of the project. You will
 obviously save some time and management will be happy. **Calculation seems to be simple – the project was delivered
 faster**.
+
+让我们考虑任何类型的测试的例子。您可以在项目开始时跳过编写测试。您显然会节省一些时间，管理层也会很高兴。计算似乎很简单 —— 项目交付得更快。
 
 But this shortcut is not worthwhile in the longer term. When the project grows, your team will start to be afraid of
 making any changes. In the end, the sum of time that you will spend will be higher than implementing tests from the
@@ -63,47 +90,78 @@ beginning. **You will be slow down in the long term because of sacrificing quali
 beginning**. On the other hand - if a project is not critical and needs to be created fast, you can skip tests. It
 should be a pragmatic decision, not just “we know better, and we do not create bugs”.
 
+但从长远来看，这种捷径是不值得的。当项目增长时，你的团队会开始害怕做任何改变。最后，你所花费的时间总和将比从一开始就实施测试要多。从长远来看，你会因为在一开始就为快速提高性能而牺牲质量而放慢速度。另一方面，如果一个项目不是很关键，需要快速创建，你可以跳过测试。这应该是一个务实的决定，而不仅仅是 "
+我们知道得更多，而且我们不会产生bug"。
+
 The case is the same for DDD. When you want to use DDD, you will need a bit more time in the beginning, but long-term
 saving is enormous. However, not every project is complex enough to use advanced techniques like DDD.
 
+DDD 的情况也是如此。当你想使用 DDD 时，一开始你会需要更多的时间，但长期的节省是巨大的。然而，并不是每个项目都足够复杂，可以使用 DDD 等高级技术。
+
 **There is no quality vs. speed tradeoff. If you want to go fast in the long term, you need to keep high quality**.
 
+不存在质量与速度的权衡。如果你想长期快速发展，你需要保持高质量。
+
 **That’s great, but do you have any evidence it works?**
+
+这很好，但你有任何证据证明它有效吗？
 
 If you asked me this question two years ago, I would say: “Well, I feel that it works better!”. But just trusting my
 words may be not enough.
 
+如果你两年前问我这个问题，我会说。"嗯，我觉得它的效果更好！"。但是仅仅相信我的话可能是不够的。
+
 There are many tutorials showing some dumb ideas and claiming that they work without any evidence – let’s don’t trust
 them blindly!
+
+有许多教程展示了一些愚蠢的想法，并在没有任何证据的情况下声称它们是有效的--我们不要盲目地相信它们!
 
 ![](./chapter06/ch0601.png)
 
 <center>Figure 6.1: ‘Is High Quality Software Worth the Cost?’ from martinfowler.com</center>
+<center>Figure 6.1: “高质量的软件是否值得付出代价？”来自 martinfowler.com</center>
 
 Just to remind: if someone has a couple thousand Twitter
 followers, [that alone is not a reason to trust them](https://en.wikipedia.org/wiki/Authority_bias)!
+
+我想提醒的是：如果某人有几千个Twitter粉丝，[仅此一点并不能成为信任他们的理由](https://en.wikipedia.org/wiki/Authority_bias)!
 
 Fortunately, 2 years
 ago [Accelerate: The Science of Lean Software and DevOps: Building and Scaling High Perform- ing Technology Organizations](https://www.amazon.com/Accelerate-Software-Performing-Technology-Organizations/dp/1942788339)
 was released. In brief, this book is a description of what factors affect development teams’ performance. But the reason
 this book became famous is that it’s not just a set of not validated ideas – **it’s based on scientific research.**
 
+幸运的是，2年前 [Accelerate: The Science of Lean Software and DevOps: Building and Scaling High Perform- ing Technology Organizations](https://www.amazon.com/Accelerate-Software-Performing-Technology-Organizations/dp/1942788339)
+发布了。简而言之，这本书描述了哪些因素会影响开发团队的绩效。但这本书之所以出名，是因为它不仅仅是一套未经验证的观点 -- **它是基于科学研究的结果。**
+
 **I was mostly interested with the part showing what allows teams to be top-performing teams.** This book shows some
 obvious facts, like introducing DevOps, CI/CD, and loosely coupled architecture, which are all an essential factor in
 high-performing teams.
 
+**我最感兴趣的是显示什么能让团队成为顶级表现的团队的部分。** 这本书展示了一些显而易见的事实，比如介绍了DevOps、CI/CD和松散耦合的架构，这些都是高绩效团队的一个重要因素。
+
 > If things like DevOps and CI/CD are not obvious to you, you can start with these books: [The Phoenix Project](https://www.amazon.com/Phoenix-Project-DevOps-Helping-Business/dp/0988262592) and [The DevOps Handbook](https://www.amazon.com/DevOps-Handbook-World-Class-Reliability-Organizations/dp/1942788002)
+>
+> 如果 DevOps 和 CI/CD 之类的东西对您来说不是很明显，您可以从以下书籍开始：[The Phoenix Project](https://www.amazon.com/Phoenix-Project-DevOps-Helping-Business/dp/0988262592) 和 [The DevOps Handbook](https://www.amazon.com/DevOps-Handbook-World-Class-Reliability-Organizations/dp/1942788002)
 
 What Accelerate tells us about top-performing teams?
 
+Accelerate 告诉我们什么关于表现最好的团队？
+
 We found that high performance is possible with all kinds of systems, provided that systems and the teams that build and
 maintain them—are loosely coupled.
+
+我们发现，只要系统以及构建和维护它们的团队是松散耦合的，各种系统都可以实现高性能。
 
 This key architectural property enables teams to easily test and deploy individual components or services even as the
 organization and the number of systems it operates grow—that is, it allows organizations to increase their productivity
 as they scale.
 
+这一关键的架构属性使团队能够轻松地测试和部署单个组件或服务，即使在组织及其运行的系统数量增长时也是如此——也就是说，它允许组织在扩展时提高其生产力。
+
 So let’s use microservices, and we are done? I would not be writing this chapter if it was enough.
+
+那么让我们使用微服务，我们完成了吗？如果足够的话，我不会写这一章。
 
 - Make large-scale changes to the design of their system without depending on other teams to make changes in their
   systems or creating significant work for other teams
@@ -112,17 +170,31 @@ So let’s use microservices, and we are done? I would not be writing this chapt
 - Do most of their testing on demand, without requiring an integrated test environment Perform deployments during normal
   business hours with negligible downtime
 
+- 在不依赖其他团队对其系统进行更改或为其他团队创建大量工作的情况下对其系统设计进行大规模更改
+- 在不与团队以外的人沟通和协调的情况下完成他们的工作
+- 按需部署和发布他们的产品或服务，而不考虑它所依赖的其他服务
+- 按需进行大部分测试，无需集成测试环境 在正常工作时间内执行部署，停机时间可忽略不计
+
 Unfortunately, in real life, many so-called service-oriented architectures don’t permit testing and deploy- ing services
 independently of each other, and thus will not enable teams to achieve higher performance.
+
+不幸的是，在现实生活中，许多所谓的面向服务的架构并不允许测试和部署相互独立的服务，因此不会使团队获得更高的性能。
 
 [...] employing the latest whizzy microservices architecture deployed on containers is no guarantee of higher
 performance if you ignore these characteristics. [...] To achieve these characteristics, design systems are loosely
 coupled — that is, can be changed and validated independently of each other.
 
+[...] 如果忽略这些特征，采用部署在容器上的最新奇特的微服务架构并不能保证更高的性能。
+[...] 为了实现这些特性，设计系统是松散耦合的——也就是说，可以相互独立地进行更改和验证。
+
 Using just microservices architecture and splitting services to small pieces is not enough. If it’s done in a wrong way,
 it adds extra complexity and slows teams down. DDD can help us here.
 
+仅仅使用微服务架构和将服务分割成小块是不够的。如果方式不对，就会增加额外的复杂性，并拖慢团队的速度。在此，DDD可以帮助我们。
+
 I’m mentioning DDD term multiple times. What DDD actually is?
+
+我多次提到DDD一词。DDD究竟是什么？
 
 ## What is DDD (Domain-Driven Design)
 
