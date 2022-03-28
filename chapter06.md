@@ -196,39 +196,53 @@ I’m mentioning DDD term multiple times. What DDD actually is?
 
 我多次提到DDD一词。DDD究竟是什么？
 
-## What is DDD (Domain-Driven Design)
+## What is DDD (Domain-Driven Design) / 什么是 DDD (领域驱动设计)
 
-Let’s start with Wikipedia definition:
+Let’s start with Wikipedia definition: / 让我们从维基百科的定义开始：
 
 - Domain-driven design (DDD) is the concept that the structure and language of your code (class names, class methods,
   class variables) should match the business domain. For example, if your software processes loan applications, it might
   have classes such as LoanApplication and Customer, and methods such as AcceptOffer and Withdraw.
 
+  领域驱动设计 (DDD) 是指代码的结构和语言（类名、类方法、类变量）应与业务领域相匹配的概念。例如，如果您的软件处理贷款申请，它可能具有诸如 LoanApplication 和 Customer 之类的类，以及诸如
+  AcceptOffer 和 Withdraw 之类的方法。
   ![](./chapter06/ch0602.png)
 
   <center>Figure 6.2: No, God please no!</center>
 
 Well, it’s not the perfect one. It’s still missing some most important points.
 
+嗯，这不是一个完美的方案。它仍然缺少一些最重要的点。
+
 It’s also worth to mention, that DDD was introduced in 2003. That’s pretty long time ago. Some distillation may be
 helpful to put DDD in the 2020 and Go context.
 
+还值得一提的是，DDD是在2003年推出的。那是相当长的时间了。一些提炼可能有助于将DDD放在2020年和Go的背景中。
+
 > If you are interested in some historical context on when DDD was created, you should check [Tackling Complexity in the Heart of Software](https://youtu.be/dnUFEg68ESM?t=1109) by the DDD creator - Eric Evans
 >
+> 如果你对DDD创建的历史背景感兴趣，你应该看看DDD创建者Eric Evans写的[《解决软件核心的复杂性》](https://youtu.be/dnUFEg68ESM?t=1109)。
 
 My simple DDD definition is: Ensure that you solve valid problem in the optimal way. After that implement the solution
 in a way that your business will understand without any extra translation from technical language needed.
 
-How to achieve that?
+我对DDD的简单定义是：确保你以最佳方式解决有效问题。之后，以你的企业能够理解的方式实施解决方案，而不需要任何额外的技术语言翻译。
 
-### Coding is a war, to win you need a strategy!
+How to achieve that? / 如何实现这一目标？
+
+### Coding is a war, to win you need a strategy! / 编码是一场战争，要想取胜，你需要一个策略!
 
 I like to say that “5 days of coding can save 15 minutes of planning”.
+
+我喜欢说“5 天的编码可以节省 15 分钟的计划时间”。
 
 Before starting to write any code, you should ensure that you are solving a valid problem. It may sound obvious, but in
 practice from my experience, it’s not as easy as it sounds. This is often the case that the solution created by
 engineers is not actually solving the problem that the business requested. A set of patterns that helps us in that field
 is named Strategic DDD patterns.
+
+在开始写任何代码之前，你应该确保你正在解决一个有效的问题。这听起来很明显，但从我的经验来看，实际上并不像听起来那么容易。通常的情况是，工程师所创造的解决方案实际上并没有解决业务所要求的问题。
+在这个领域，有一套模式可以帮助我们，它被命名为DDD的战略模式。
 
 From my experience, DDD Strategic Patterns are often skipped. The reason is simple: we are all developers, and we like
 to write code rather than talk to the “business people”. Unfortunately, this approach when we are closed in a basement
@@ -236,37 +250,58 @@ without talking to any business people has a lot of downsides. Lack of trust fro
 the system works (from both business and engineering side), solving wrong problems – these are just some of the most
 common issues.
 
+根据我的经验，DDD 战略模式经常被跳过。原因很简单：我们都是开发人员，我们喜欢编写代码而不是与“业务人员”交谈。
+不幸的是，当我们关在地下室而不与任何商务人士交谈时，这种方法有很多缺点。缺乏来自业务的信任，缺乏对系统工作原理的了解（从业务和工程方面）， 解决错误的问题——这些只是最常见的一些问题。
+
 The good news is that in most cases it’s caused by a lack of proper techniques like Event Storming. They can give both
 sides advantages. What is also surprising is that talking to the business may be one of the most enjoyable parts of the
 work!
 
+好消息是，在大多数情况下，它是由缺乏适当的技术如事件风暴造成的。它们可以给双方带来优势。同样令人惊讶的是，与企业交谈可能是工作中最令人愉快的部分之一
+
 Apart from that, we will start with patterns that apply to the code. They can give us some advantages of DDD. They will
 also be useful for you faster.
+
+除此以外，我们将从适用于代码的模式开始。它们可以给我们带来DDD的一些优势。它们也会更快地对你有用。
 
 Without Strategic patterns, I’d say that you will just have 30% of advantages that DDD can give you. We will go back to
 Strategic patterns in the next chapters.
 
-### DDD Lite in Go
+如果没有战略模式，我想说，你将只拥有DDD所能提供的30%的优势。在接下来的章节中，我们将再次讨论战略模式。
+
+### DDD Lite in Go / Go 中的 DDD Lite
 
 After a pretty long introduction, it’s finally time to touch some code! In this chapter, we will cover some basics of
 **Tactical Domain-Driven Design patterns in Go**. Please keep in mind that this is just the beginning. There will be a
 couple more chapters needed to cover the entire topic.
 
+在经历了相当长的介绍之后，终于到了接触一些代码的时候了 在本章中，我们将介绍Go中战术领域驱动设计模式的一些基础知识。请记住，这只是一个开始。还需要有几章来涵盖整个主题。
+
 One of the most crucial parts of Tactical DDD is trying to reflect the domain logic directly in the code.
+
+战术DDD最关键的部分之一是试图在代码中直接反映领域逻辑。
 
 But it’s still some non-specific definition – and it’s not needed at this point. I don’t also want to start by
 describing what are Value Objects, Entities, Aggregates. Let’s better start with practical examples.
 
-### Refactoring of trainer service
+但这仍然是一些不具体的定义--而且在这一点上不需要。我也不想从描述什么是价值对象、实体、聚合开始。让我们最好从实际的例子开始。
+
+### Refactoring of trainer service / 重构培训员服务
 
 The first (micro)service that we will refactor is trainer. We will leave other services untouched now – we will go back
 to them later.
 
+我们将重构的第一个（微）服务是 trainer。我们现在将保持其他服务不变 - 我们以后会再去碰它们。
+
 This service is responsible for keeping the trainer schedule and ensuring that we can have only one training scheduled
 in one hour. It also keeps the information about available hours (trainer’s schedule).
 
+该服务负责保持培训师的日程安排，并确保我们在一小时内只能安排一次培训。它还保留有关可用时间的信息（培训师的时间表）。
+
 The initial implementation was not the best. Even if it is not a lot of logic, some parts of the code started to be
 messy. I have also some feeling based on experience, that with time it will get worse.
+
+最初的实现并不是最好的。即使不是很多的逻辑，代码的某些部分也开始杂乱无章。根据经验，我也有一些感觉，随着时间的推移，情况会越来越糟。
 
 ```go
 package main
@@ -322,16 +357,24 @@ Even if it’s not the worst code ever, it reminds me what I’ve seen when I ch
 on. I can imagine that after some time some new features will arrive and it will be much worse. It’s also hard to mock
 dependencies here, so there are also no unit tests.
 
-### The First Rule - reflect your business logic literally
+即使这不是有史以来最糟糕的代码，它也让我想起了我在检查我工作的代码的git历史时看到的情况。我可以想象，一段时间后，一些新的功能会出现，情况会更糟糕。这里也很难模拟依赖关系，所以也没有单元测试。
+
+### The First Rule - reflect your business logic literally / 第一条规则--从字面上反映你的业务逻辑
 
 While implementing your domain, you should stop thinking about structs like dummy data structures or “ORM like” entities
 with a list of setters and getters. You should instead think about them like **types with behavior**.
 
+在实现你的领域时，你应该停止考虑像虚拟数据结构这样的结构或带有 setter 和 getter 列表的“类似 ORM”的实体。相反，您应该将它们视为具有行为的类型。
+
 When you are talk with your business stakeholders, they say “I’m scheduling training on 13:00”, rather than “I’m setting
 the attribute state to ‘training scheduled’ for hour 13:00.”.
 
+当你和你的商业利益相关者交谈时，他们说 "我正在安排13:00的培训"，而不是 "我正在设置13:00的属性状态为'培训计划'"。
+
 They also don’t say: “you can’t set attribute status to ‘training_scheduled’”. It is rather: “You can’t schedule
 training if the hour is not available”. How to put it directly in the code?
+
+他们也没有说。"你不能将属性状态设置为'training_scheduled'"。相反，它是这样说的。"如果这个小时没有时间，你就不能安排培训"。如何把它直接写在代码里？
 
 ```go
 package hour
@@ -351,11 +394,17 @@ One question that can help us with implementation is: “Will business understan
 technical terms?”. You can see in that snippet, that **even not technical person will be able to understand when you can
 schedule training**.
 
+可以帮助我们实施的一个问题是：“企业是否会在不额外翻译技术术语的情况下理解我的代码？”。您可以在该片段中看到，即使不是技术人员也能够理解您何时可以安排培训。
+
 This approach’s cost is not high and helps to tackle complexity to make rules much easier to understand. Even if the
 change is not big, we got rid of this wall of ifs that would become much more complicated in the future.
 
+这种方法的成本并不高，而且有助于解决复杂性，使规则更容易理解。即使变化不大，我们也摆脱了这堵在未来会变得更加复杂的 "如果 "墙。
+
 We are also now able to easily add unit tests. What is good – we don’t need to mock anything here. The tests are also a
 documentation that helps us understand how Hour behaves.
+
+我们现在也能够轻松地添加单元测试。什么是好的 - 我们不需要在这里模拟任何东西。测试也是一个文档，帮助我们理解 Hour 的行为方式。
 
 ```go
 package hour_test
@@ -380,16 +429,22 @@ Now, if anybody will ask the question “When I can schedule training”, you ca
 the answer to this kind of question is even less obvious – multiple times I spent hours trying to find all places where
 some objects were used in an unexpected way. The next rule will help us with that even more.
 
-### Testing Helpers
+现在，如果有人问“我什么时候可以安排培训”这个问题，您可以快速回答。在一个更大的系统中，这类问题的答案就更不明显了——多次我花了几个小时试图找到所有的地方，其中一些对象被以意外的方式使用。下一条规则将更多地帮助我们解决这个问题。
+
+### Testing Helpers / 测试助手
 
 It’s useful to have some helpers in tests for creating our domain entities. For example: `newExampleTrainingWithTime`,
 `newCanceledTraining` etc. It also makes our domain tests much more readable.
+
+在创建我们的域实体的测试中有一些帮助程序很有用。例如：`newExampleTrainingWithTime`、`newCanceledTraining` 等。它还使我们的域测试更具可读性。
 
 Custom asserts, like `assertTrainingsEquals` can also save a lot of
 duplication. [github.com/google/go-cmp](https://github.com/google/go-cmp) library is extremely useful for comparing
 complex structs. It allows us to compare our domain types with private field,
 skip [some field validation](https://godoc.org/github.com/google/go-cmp/cmp/cmpopts#IgnoreFields) or
 implement [custom validation functions](https://godoc.org/github.com/google/go-cmp/cmp/cmpopts#IgnoreFields).
+
+自定义断言，如 `assertTrainingsEquals` 也可以节省大量重复。github.com/google/go-cmp库对于比较复杂的结构极为有用。它允许我们用私有字段比较我们的域类型，跳过一些字段验证或实现自定义验证函数。
 
 ```go
 package test2
@@ -415,6 +470,8 @@ func assertTrainingsEquals(t *testing.T, tr1, tr2 *training.Training) {
 It’s also a good idea to provide a Must version of constructors used often, so for example `MustNewUser`. In contrast
 with normal constructors, they will panic if parameters are not valid (for tests it’s not a problem).
 
+为经常使用的构造函数提供 "必须 "版本也是一个好主意，例如 `MustNewUser`。与普通的构造函数相比，如果参数无效，它们就会 `panic`（对于测试来说，这并不是一个问题）。
+
 ```go
 package t
 
@@ -439,14 +496,17 @@ func MustNewUser(userUUID string, userType UserType) User {
 
 The Second Rule: always keep a valid state in the memory
 
-- I recognize that my code will be used in ways I cannot anticipate, in ways it was not designed, and for longer than it
-  was ever intended.
+第二条规则：在内存中始终保持有效状态
 
-  The Rugged Manifesto (https://ruggedsoftware.org/)
+- I recognize that my code will be used in ways I cannot anticipate, in ways it was not designed, and for longer than it
+  was ever intended. / 我认识到，我的代码将以我无法预料的方式被使用，而且使用的时间比它的初衷更长。
+    - The Rugged Manifesto / 坚固的宣言 (https://ruggedsoftware.org/)
 
 The world would be better if everyone would take this quote into account. I’m also not without fault here. From my
 observation, when you are sure that the object that you use is always valid, it helps to avoid a lot of ifs and bugs.
 You will also feel much more confident knowing that you are not able to do anything stupid with the current code.
+
+如果每个人都能考虑到这句话，世界就会变得更好。我在这里也不是没有错。根据我的观察，当你确信你所使用的对象总是有效的时候，它有助于避免很多的if和bug。你也会感到更有信心，因为你知道你不可能用当前的代码做任何愚蠢的事情。
 
 I have many flashbacks that I was afraid to make some change because I was not sure of the side effects of it.
 **Developing new features is much slower without confidence that you are correctly using the code!**
