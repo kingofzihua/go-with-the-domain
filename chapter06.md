@@ -511,9 +511,14 @@ You will also feel much more confident knowing that you are not able to do anyth
 I have many flashbacks that I was afraid to make some change because I was not sure of the side effects of it.
 **Developing new features is much slower without confidence that you are correctly using the code!**
 
+我有很多倒叙，我不敢做出一些改变，因为我不确定它的副作用。**如果对自己是否正确使用代码没有信心，开发新的功能就会慢得多!**
+
 Our goal is to do validation in only one place (good DRY) and ensure that nobody can change the internal state of the
 Hour. The only public API of the object should be methods describing behaviors. No dumb getters and setters!. We need to
 also put our types to separate package and make all attributes private.
+
+我们的目标是只在一个地方做验证（良好的DRY），并确保没有人可以改变Hour的内部状态。该对象的唯一公共API应该是描述行为的方法。没有愚蠢的 `getters` 和 `setters`
+！我们还需要把我们的类型放到独立的包中，并使所有的属性成为私有。
 
 ```go
 
@@ -540,7 +545,9 @@ Source: [hour.go on GitHub](https://bit.ly/3se9o4I)
 
 We should also ensure that we are not breaking any rules inside of our type.
 
-Bad example:
+我们还应该确保我们的类型里面没有违反任何规则。
+
+Bad example/不好的例子:
 
 ```
 h := hour.NewAvailableHour("13:00")
@@ -551,7 +558,7 @@ if h.HasTrainingScheduled() {
 }
 ```
 
-Good example:
+Good example / 好的例子:
 
 ```
 func (h *Hour) CancelTraining() error {
@@ -569,10 +576,12 @@ func (h *Hour) CancelTraining() error {
   }
 ```
 
-### The Third Rule - domain needs to be database agnostic
+### The Third Rule - domain needs to be database agnostic / 第三条规则--领域需要与数据库无关
 
 There are multiple schools here – some are telling that it’s fine to have domain impacted by the database client. From
 our experience, keeping the domain strictly without any database influence works best.
+
+这里有多种流派--有些人告诉我们，数据库客户端对域的影响是可以的。根据我们的经验，严格保持领域不受任何数据库的影响效果最好。
 
 The most important reasons are:
 
@@ -581,15 +590,28 @@ The most important reasons are:
 - because of the Go design and lack of “magic” like annotations, ORM’s or any database solutions are affecting in even
   more significant way
 
-### Domain-First approach
+最重要的原因是：
+
+- 领域类型不受使用的数据库解决方案的影响 —— 它们应该只受业务规则的影响
+- 我们可以用一种更理想的方式在数据库中存储数据
+- 由于Go的设计和缺乏像注解这样的 "魔法"，ORM或任何数据库解决方案都会受到更严重的影响。
+
+### Domain-First approach / 领域优先方法
 
 > If the project is complex enough, we can spend even 2-4 weeks to work on the domain layer, with just in-memory database implementation. In that case, we can explore the idea deeper and defer the decision to choose the database later. All our implementation is just based on unit tests.
 > We tried that approach a couple of times, and it always worked nicely. It is also a good idea to have some timebox here, to not spend too much time.
 > Please keep in mind that this approach requires a good relationship and a lot of trust from the business! **If your relationship with business is far from being good, Strategic DDD patterns will improve that. Been there, done that!**
+>
+> 如果项目足够复杂，我们甚至可以花2-4周的时间在领域层工作，只用内存数据库实现。在这种情况下，我们可以更深入地探索这个想法，并推迟决定是否选择数据库。我们所有的实现都只是基于单元测试。我们试过几次这种方法，总是很顺利。在这里有一些时间框架也是一个好主意，不要花费太多的时间。请记住，这种方法需要一个良好的关系和来自业务的大量信任!
+> 如果你与业务的关系远远不够好，战略DDD模式将改善这一状况。我也有过这样的经历。
 
 To not make this chapter long, let’s just introduce the Repository interface and assume that it works.
 
+为了不使本章冗长，我们只介绍一下Repository接口，并假设它能工作。
+
 I will cover this topic more in-depth in the next chapter.
+
+我将在下一章更深入地讨论这个主题。
 
 ```go
 
@@ -608,14 +630,18 @@ type Repository interface {
 
 Source: [repository.go on GitHub](https://bit.ly/2NP1NuA)
 
-> You may ask why UpdateHour has updateFn func(h *Hour) (*Hour, error) – we will use that for han- dling transactions nicely. You can learn more in The Repository Pattern (Chapter 7).
+> You may ask why UpdateHour has `updateFn func(h *Hour) (*Hour, error)` – we will use that for han- dling transactions nicely. You can learn more in The Repository Pattern (Chapter 7).
+> 你可能会问为什么 UpdateHour 有 `updateFn func(h *Hour) (*Hour, error)` ——我们将使用它来很好地处理事务。您可以在存储库模式（第 7 章）中了解更多信息。
 
-### Using domain objects
+### Using domain objects / 使用领域对象
 
 I did a small refactor of our gRPC endpoints, to provide an API that is more “behavior-oriented” rather
 than [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete). It reflects better the new characteristic of
 the domain. From my experience, it’s also much easier to maintain multiple, small methods than one, “god” method
 allowing us to update everything.
+
+我对我们的gRPC端点做了一个小的重构，以提供一个更 "面向行为 "的API，而不是 [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete)
+。它更好地反映了这个领域的新特点。根据我的经验，维护多个小方法比维护一个允许我们更新一切的 "神 "方法要容易得多。
 
 ```shell
 --- a/api/protobuf/trainer.proto
@@ -649,6 +675,8 @@ Source: [0249977c58a310d343ca2237c201b9ba016b148e on GitHub](https://bit.ly/3pFL
 The implementation is now much simpler and easier to understand. We also have no logic here - just some orchestration.
 Our gRPC handler now has 18 lines and no domain logic!
 
+现在的实现要简单得多，也更容易理解。我们在这里也没有逻辑--只是一些协调工作。我们的gRPC处理程序现在有18行，没有领域逻辑
+
 ```go
 package main
 
@@ -674,30 +702,41 @@ func (g GrpcServer) MakeHourAvailable(ctx context.Context, request *trainer.Upda
 
 Source: [grpc.go on GitHub](https://bit.ly/3pD36Kd)
 
-#### No more Eight-thousanders
+#### No more Eight-thousanders / 不再有八千米以上山峰
 
 > As I remember from the old-times, many Eight-thousanders were actually controllers with a lot of domain logic in HTTP controllers.
 >
+> 在我的记忆中，许多八千米以上山峰实际上是控制器，在HTTP控制器中有许多域的逻辑。
+>
 > With hiding complexity inside of our domain types and keeping rules that I described, we can prevent uncontrolled growth in this place.
 >
+>通过将复杂性隐藏在我们的领域类型里面，并保持我所描述的规则，我们可以防止在这个地方的不可控增长。
 
-### That’s all for today
+### That’s all for today / 这就是本章的全部内容
 
 I don’t want to make this chapter too long – let’s go step by step!
+
+我不想把这一章写得太长--让我们一步一步来！"。
 
 If you can’t wait, the entire working diff for the refactor is available on [GitHub](https://bit.ly/3umRYES). In the
 next chapter, I’ll cover one part from the diff that is not explained here: repositories.
 
+如果你等不及了，整个重构的工作差异可以在 [GitHub](https://bit.ly/3umRYES) 上找到。在下一章中，我将介绍这里没有解释的部分：存储库。
+
 Even if it’s still the beginning, some simplifications in our code are visible.
+
+即使这仍然是个开始，我们的代码中的一些简化是可见的。
 
 The current implementation of the model is also not perfect – that’s good! You will never implement the perfect model
 from the beginning. **It’s better to be prepared to change this model easily, instead of wasting time to make it
 perfect**. After I added tests of the model and separated it from the rest of the application, I can change it without
 any fear.
 
-### Can I already put that I know DDD to my CV?
+目前的模型实施也不完美--这很好! 你永远不会从一开始就实施完美的模型。最好是准备好轻松地改变这个模型，而不是浪费时间来使它完美。在我添加了模型的测试，并将其与应用程序的其他部分分开后，我可以毫无顾忌地改变它。
 
-Not yet.
+### Can I already put that I know DDD to my CV? / 我可以在我的简历中写上我知道DDD吗？
+
+Not yet./ 暂时不行。
 
 I needed 3 years after I heard about DDD to the time when I connected all the dots (It was before I heard about Go).
 After that, I’ve seen why all techniques that we will describe in the next chapters are so important. But before
@@ -705,9 +744,16 @@ connecting the dots, it will require some patience and trust that it will work. 
 years like me, but we currently planned about 10 chapters on both strategic and tactical patterns. It’s a lot of new
 features and parts to refactor in Wild Workouts left!
 
+在听到DDD之后，我需要3年时间才能将所有的点联系起来（那是在我听到Go之前）。在那之后，我明白了为什么我们将在接下来的章节中描述的所有技术是如此重要。但在连接这些点之前，需要一些耐心和信任，相信会有效果。这是很值得的!
+你不会像我一样需要3年时间，但我们目前计划了大约10个章节，涉及战略和战术模式。 Wild Workouts 中还有很多新功能和部件需要重构！
+
 I know that nowadays a lot of people promise that you can become expert in some area after 10 minutes of an article or a
 video. The world would be beautiful if it would be possible, but in reality, it is not so simple.
+
+我知道，现在很多人都承诺，只要看了一篇文章或一段视频10分钟，你就能成为某个领域的专家。如果能做到这一点，世界将是美好的，但在现实中，这并不是那么简单。
 
 Fortunately, a big part of the knowledge that we share is universal and can be applied to multiple technologies, not
 only Go. You can treat these learnings as an investment in your career and mental health in the long term. There is
 nothing better than solving the right problems without fighting with unmaintainable code!
+
+幸运的是，我们所分享的知识有很大一部分是通用的，可以应用于多种技术，而不仅仅是 Go。从长远来看，你可以把这些知识当作是对你的职业和心理健康的投资。没有什么比解决正确的问题，而不与不可维护的代码作斗争更好的了！这就是我们的目标。
