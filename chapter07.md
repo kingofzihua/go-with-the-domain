@@ -1,10 +1,12 @@
-## The Repository Pattern
+## The Repository Pattern / 存储模式
 
-Robert Laszczak
+Robert Laszczak / 罗伯特·拉斯扎克
 
 I’ve seen a lot of complicated code in my life. Pretty often, the reason of that complexity was application logic
 coupled with database logic. **Keeping logic of your application along with your database logic makes your application
 much more complex, hard to test, and maintain.**
+
+在我的生活中，我见过很多复杂的代码。很多时候，这种复杂性的原因是应用逻辑与数据库逻辑的结合。**把你的应用程序的逻辑和你的数据库逻辑放在一起，使你的应用程序更加复杂，难以测试和维护。**
 
 There is already a proven and simple pattern that solves these issues. The pattern that allows you to **separate your
 application logic from database logic**. It allows you to **make your code simpler and easier to add new
@@ -12,44 +14,71 @@ functionalities**. As a bonus, you can **defer important decision** of choosing 
 good side effect of this approach is out of the box **immunity for database vendor lock-in**. The pattern that I have in
 mind is repository.
 
+已经有一个经过验证的简单模式来解决这些问题。该模式允许你将你的**应用逻辑与数据库逻辑分开**
+。它允许您使您的代码更简单，更容易添加新功能。作为奖励，您可以推迟选择数据库解决方案和架构的重要决定。这种方法的另一个好的副作用是对数据库供应商锁定的开箱即用免疫。我想到的模式是存储库。
+
 When I’m going back in my memories to the applications I worked with, I remember that it was tough to understand how
 they worked. **I was always afraid to make any change there – you never know what unexpected, bad side effects it could
 have.** It’s hard to understand the application logic when it’s mixed with database implementation. It’s also a source
 of duplication.
+
+当我回忆起我使用过的应用程序时，我记得很难理解它们是如何工作的。我总是害怕在那里做出任何改变——你永远不知道它会产生什么意想不到的不良副作用。当应用程序的逻辑与数据库的实现混在一起时，变得很难理解。这也是重复的来源。
 
 Some rescue here may be
 building [end-to-end tests](https://martinfowler.com/articles/microservice-testing/#testing-end-to-end-introduction).
 But it hides the problem instead of really solving it. Having a lot of E2E tests is slow, flaky, and hard to maintain.
 Sometimes they even prevent us from creating new functionality, rather than help.
 
+有一些补救方式可能是构建[端到端测试](https://martinfowler.com/articles/microservice-testing/#testing-end-to-end-introduction)
+。但它隐藏了问题，而不是真正解决它。进行大量 E2E 测试是缓慢、不稳定且难以维护的。有时它们甚至阻止我们创建新功能，而不是提供帮助。
+
 In this chapter, I will teach you how to apply this pattern in Go in a pragmatic, elegant, and straightforward way. I
-will also deeply cover a topic that is often skipped - **clean transactions handling.**
+will also deeply cover a topic that is often skipped - **clean transactions handling**
+
+在这一章中，我将教你如何以一种务实、优雅和直接的方式在Go中应用这种模式。我还将深入介绍一个经常被忽略的话题 - **clean transactions handling.**.
 
 To prove that I prepared 3 implementations: **Firestore, MySQL, and simple in-memory**.
 
+为了证明这一点，我准备了3个实现方案。**Firestore, MySQL, and simple in-memory**。
+
 Without too long introduction, let’s jump to the practical examples!
 
-### Repository interface
+没有太长的介绍，直接上实例!
+
+### Repository interface / 仓储接口
 
 The idea of using the repository pattern is:
+
+使用仓储模式的想法是：
 
 Let’s abstract our database implementation by defining interaction with it by the interface. You need to be able to use
 this interface for any database implementation – that means that it should be free of any implementation details of any
 database.
 
+让我们通过定义接口与数据库的交互来抽象出我们的数据库实现。你需要能够对任何数据库的实现使用这个接口--这意味着它应该不受任何数据库的实现细节的影响。
+
 Let’s start with the refactoring of [trainer](https://bit.ly/2NyKVbr) service. Currently, the service allows us to get
 information about hour availability [via HTTP API](https://bit.ly/2OXsgGB) and [via gRPC](https://bit.ly/2OXsgGB). We
-can also change the availability of the hour [via HTTP API](https://bit.ly/3unIQzJ)
-and [gRPC](https://bit.ly/3unIQzJ) .
+can also change the availability of the hour [via HTTP API](https://bit.ly/3unIQzJ) and [gRPC](https://bit.ly/3unIQzJ) .
+
+让我们从 [trainer](https://bit.ly/2NyKVbr) 服务的重构开始。目前，该服务允许我们通过[via HTTP API](https://bit.ly/2OXsgGB)
+和 [via gRPC](https://bit.ly/2OXsgGB) 来获取小时可用性的信息。我们还可以通过 [via HTTP API](https://bit.ly/3unIQzJ)
+和 [gRPC](https://bit.ly/3unIQzJ) 改变小时的可用性。
 
 In the previous chapter, we refactored Hour to use DDD Lite approach. Thanks to that, we don’t need to think about
 keeping rules of when Hour can be updated. Our domain layer ensures that we can’t do anything “stupid”. We also don’t
 need to think about any validation. We can just use the type and execute necessary operations.
 
+在上一章中，我们重构了Hour，以使用DDD Lite方法。得益于此，我们不需要考虑保留Hour何时能被更新的规则。我们的领域层确保我们不会做任何 "傻事"。我们也不需要考虑任何验证的问题。我们只需使用该类型并执行必要的操作。
+
 We need to be able to get the current state of Hour from the database and save it. Also, in case when two people would
 like to schedule a training simultaneously, only one person should be able to schedule training for one hour.
 
+我们需要能够从数据库中获取 Hour 的当前状态并保存。此外，如果两个人想同时安排培训，则应该只有一个人可以安排一小时的培训。
+
 Let’s reflect our needs in the interface:
+
+让我们在界面中反映我们的需求：
 
 ```go
 package hour
@@ -68,15 +97,22 @@ Source: [repository.go on GitHub](https://bit.ly/3bo6QtT)
 
 We will use `GetOrCreateHour` to get the data, and `UpdateHour` to save the data.
 
+我们将使用 `GetOrCreateHour` 来获取数据，并使用 `UpdateHour` 来保存数据。
+
 We define the interface in the same package as the `Hour` type. Thanks to that, we can avoid duplication if using this
 interface in many modules (from my experience, it may often be the case). It’s also a similar pattern to `io.Writer`,
 where io package defines the interface, and all implementations are decupled in separate packages. How to implement that
 interface?
 
-### Reading the data
+我们将接口定义在与 `Hour` 类型相同的包中。正因为如此，如果在许多模块中使用此接口，我们可以避免重复（根据我的经验，可能经常出现这种情况）。这也是与 `io.Writer` 类似的模式，其中 io
+包定义了接口，所有实现都在单独的包中解耦。如何实现该接口？
+
+### Reading the data / 读取数据
 
 Most database drivers can use the `ctx context.Context` for cancellation, tracing, etc. It’s not specific to any
 database (it’s a common Go concept), so you should not be afraid that you spoil the domain.
+
+大多数数据库驱动程序可以使用 `ctx context.Context` 来取消、追踪等。这不是任何数据库所特有的（这是一个通用的Go概念），所以你不应该害怕你破坏了这个领域。
 
 In most cases, we query data by using UUID or ID, rather than time.Time. In our case, it’s okay – the hour is unique by
 design. I can imagine a situation that we would like to support multiple trainers – in this case, this assumption will
