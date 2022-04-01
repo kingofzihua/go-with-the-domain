@@ -116,10 +116,15 @@ database (it’s a common Go concept), so you should not be afraid that you spoi
 
 In most cases, we query data by using UUID or ID, rather than time.Time. In our case, it’s okay – the hour is unique by
 design. I can imagine a situation that we would like to support multiple trainers – in this case, this assumption will
-not be valid. Change to UUID/ID would still be simple. But for
-now, [YAGNI](https://en.wikipedia.org/wiki/You_aren%27t_gonna_need_it)!
+not be valid. Change to UUID/ID would still be simple. But for now,
+[YAGNI](https://en.wikipedia.org/wiki/You_aren%27t_gonna_need_it)!
+
+在大多数情况下，我们通过使用UUID或ID来查询数据，而不是使用time.Time。在我们的案例中，这没有问题--在设计上，小时是唯一的。我可以想象，我们希望支持多个培训师的情况--在这种情况下，这个假设就不成立了。改为UUID/ID仍然会很简单。
+但是现在，[YAGNI](https://en.wikipedia.org/wiki/You_aren%27t_gonna_need_it)！
 
 For clarity – this is how the interface based on UUID may look like:
+
+为了清楚起见--这是基于 UUID 可能看起来是这样的。
 
 ```
 GetOrCreateHour(ctx context.Context, hourUUID string) (*Hour, error)
@@ -127,8 +132,11 @@ GetOrCreateHour(ctx context.Context, hourUUID string) (*Hour, error)
 
 > You can find an example of a repository based on UUID in **Combining DDD, CQRS, and Clean Architecture** (Chapter 11).
 >
+> 你可以在《结合 DDD、CQRS 和清洁架构》（第11章）中找到一个基于UUID的资源库的例子。
 
 How is the interface used in the application?
+
+该接口在应用中是如何使用的？
 
 ```go
 package main
@@ -163,27 +171,40 @@ Source: [grpc.go on GitHub](https://bit.ly/2ZCdmaR)
 No rocket science! We get hour.Hour and check if it’s available. Can you guess what database we use? No, and that is the
 point!
 
-As I mentioned, we can avoid vendor lock-in and be able to easily swap the database. If you can swap the database, **
-it’s a sign that you implemented the repository pattern correctly**. In practice, the situation when you change the
+没有高深的东西! 我们得到 hour.Hour 并检查它是否可用。你能猜到我们使用什么数据库吗？不能，这就是问题的关键!
+
+As I mentioned, we can avoid vendor lock-in and be able to easily swap the database. If you can swap the database,
+__it’s a sign that you implemented the repository pattern correctly__ . In practice, the situation when you change the
 database is rare. In case when you are using a solution that is not self-hosted (like Firestore), it’s more important to
 mitigate the risk and avoid vendor lock-in.
+
+正如我所提到的，我们可以避免被厂商锁定，并且能够轻松地交换数据库。如果你能交换数据库，__就说明你正确地实现了资源库模式__。在实践中，你改变数据库的情况是很少的。如果你使用的是一个非自我托管的解决方案（如 Firestore
+），那么降低风险和避免厂商锁定就更加重要了。
 
 The helpful side effect of that is that we can defer the decision of which database implementation we would like to use.
 I call this approach Domain First. I described it in depth in **Domain-Driven Design Lite** (Chapter 6). **Deferring the
 decision about the database for later can save some time at the beginning of the project. With more informations and
 context, we can also make a better decision.**
 
+其有益的作用是，我们可以推迟决定我们想使用的数据库实现。我把这种方法称为领域优先。我在__《领域驱动设计之光》（第6章）__
+中对它进行了深入的描述。将关于数据库的决定推迟到以后可以在项目开始时节省一些时间。有了更多的信息和背景，我们也可以做出更好的决定
+
 When we use the Domain-First approach, the first and simplest repository implementation may be in-memory implementation.
 
-### Example In-memory implementation
+当我们使用领域优先的方法时，第一个也是最简单的资源库实现可能是内存实现。
+
+### Example In-memory implementation / 内存实现示例
 
 Our memory uses a simple map under the hood. `getOrCreateHour` has 5 lines (without a comment and one newline)!
+
+我们的内存在底层使用了一个简单的map。 `getOrCreateHour` 有5行（不包括注释和一个换行）！这就是我们的内存实现。
 
 ```go
 package main
 
 type MemoryHourRepository struct {
-	hours map[time.Time]hour.Hour lock *sync.RWMutex
+	hours       map[time.Time]hour.Hour
+	lock        *sync.RWMutex
 	hourFactory hour.Factory
 }
 
@@ -192,7 +213,9 @@ func NewMemoryHourRepository(hourFactory hour.Factory) *MemoryHourRepository {
 		panic("missing hourFactory")
 	}
 	return &MemoryHourRepository{
-		hours: map[time.Time]hour.Hour{}, lock: &sync.RWMutex{}, hourFactory: hourFactory,
+		hours:       map[time.Time]hour.Hour{},
+		lock:        &sync.RWMutex{},
+		hourFactory: hourFactory,
 	}
 }
 func (m MemoryHourRepository) GetOrCreateHour(_ context.Context, hourTime time.Time) (*hour.Hour, error) {
@@ -207,6 +230,7 @@ func (m MemoryHourRepository) getOrCreateHour(hourTime time.Time) (*hour.Hour, e
 	}
 	// we don't store hours as pointers, but as values
 	// thanks to that, we are sure that nobody can modify Hour without using UpdateHour return &currentHour, nil
+	// ...
 }
 ```
 
@@ -216,10 +240,14 @@ Unfortunately, the memory implementation has some downsides. The biggest one is 
 service after a restart. It can be enough for the functional pre-alpha version. To make our application
 production-ready, we need to have something a bit more persistent.
 
-### Example MySQL implementation
+不幸的是，内存实现有一些缺点。最大的一个是，它在重启后不能保留服务的数据。对于功能性的前 alpha 版本来说，这已经足够了。为了使我们的应用程序可以投入生产，我们需要有一些更持久的东西。
+
+### Example MySQL implementation / MySQL 实现示例
 
 We already know how our model [looks like](https://bit.ly/3btQqQD) and how [it behaves](https://bit.ly/3btQqQD). Based
 on that, let’s define our SQL schema.
+
+我们已经知道了我们的模型是 [什么样子](https://bit.ly/3btQqQD) 的，以及它的[行为方式](https://bit.ly/3btQqQD) 。在此基础上，我们来定义我们的 SQL schema。
 
 ```sql
 CREATE TABLE `hours`
@@ -242,7 +270,15 @@ When I work with SQL databases, my default choices are:
   passed invalid `interface{}` instead of another `interface{}`. Generated code is based on the SQL schema, so you can
   avoid a lot of duplication.
 
+当我使用 SQL 数据库时，我的默认选择是：
+
+- [sqlx](https://github.com/jmoiron/sqlx) – 对于较简单的数据模型，它提供了有用的函数，帮助使用结构来解读查询结果。当模式因为关系和多个模型而变得更加复杂时，就需要...
+- [SQLBoiler](https://github.com/volatiletech/sqlboiler) -
+  非常适合具有许多领域和关系的更复杂的模型，它基于代码生成。多亏了这一点，它非常快，您不必担心您传递了无效的 `interface{}` 而不是另一个 `interface{}` 。生成的代码基于 SQL 模式，因此可以避免大量重复。
+
 We currently have only one table. sqlx will be more than enough . Let’s reflect our DB model, with “transport type”.
+
+我们目前只有一个表。 sqlx将是绰绰有余的。让我们用“传输类型”来反映我们的 DB 模型。
 
 ```go
 package main
@@ -258,10 +294,16 @@ Source: [hour_mysql_repository.go on GitHub](https://bit.ly/2NoUdqw)
 
 > You may ask why not to add the db attribute to hour.Hour? From my experience, it’s better to entirely separate domain types from the database. It’s easier to test, we don’t duplicate validation, and it doesn’t introduce a lot of boilerplate.
 >
+> 你可能会问为什么不给 hour.Hour 添加 db 属性呢？根据我的经验，最好将域类型与数据库完全分开。它更容易测试，我们不会重复验证，也不会引入很多样板。
+>
 > In case of any change in the schema, we can do it just in our repository implementation, not in the half of the project. Miłosz described a similar case in **When to stay away from DRY** (Chapter 5). I also described that rule deeper in **Domain-Driven Design Lite** (Chapter 6).
+>
+> 如果模式有任何改变，我们可以只在我们的存储库实现中做，而不是在项目的一半中做。Miłosz在__《何时远离DRY》__（第5章）中描述了一个类似的情况。我也在《领域驱动设计精简版》（第6章）中更深入地描述了这个规则。
 
 
 How can we use this struct?
+
+我们如何使用这个结构？
 
 ```go
 package main
@@ -308,21 +350,34 @@ Source: [hour_mysql_repository.go on GitHub](https://bit.ly/3uqtFGf)
 With the SQL implementation, it’s simple because we don’t need to keep backward compatibility. In previous chapters, we
 used Firestore as our primary database. Let’s prepare the implementation based on that, keeping backward compatibility.
 
-### Firestore implementation
+使用 SQL 实现，这很简单，因为我们不需要保持向后兼容性。在前面的章节中，我们使用 Firestore 作为我们的主数据库。让我们在此基础上准备实现，保持向后兼容性。
+
+### Firestore implementation / Firestore 实现
 
 When you want to refactor a legacy application, abstracting the database may be a good starting point.
+
+当您想要重构遗留应用程序时，抽象数据库可能是一个很好的起点。
 
 Sometimes, applications are built in a database-centric way. In our case, it’s an HTTP Response-centric approach – our
 database models are based on Swagger generated models. In other words – our data models are based on Swagger data models
 that are returned by API. Does it stop us from abstracting the database? Of course not! It will need just some extra
 code to handle unmarshaling.
 
+有时，应用程序是以数据库为中心的方式构建的。在我们的例子中，它是一种以 HTTP 响应为中心的方法 —— 我们的数据库模型基于 Swagger 生成的模型。换句话说，我们的数据模型基于 API 返回的 Swagger
+数据模型。它会阻止我们抽象数据库吗？当然不是！它只需要一些额外的代码来处理解组。
+
 **With Domain-First approach, our database model would be much better, like in the SQL implemen- tation.** But we are
 where we are. Let’s cut this old legacy step by step. I also have the feeling that CQRS will help us with that.
 
+__有了领域优先的方法，我们的数据库模型会好得多，就像在SQL实现中一样。__ 但我们现在所处的位置。让我们一步一步地削减这个旧的遗产。我也感觉到，CQRS将帮助我们实现这一目标。
+
 > In practice, a migration of the data may be simple, as long as no other services are integrated directly via the database.
 >
+> 在实践中，数据的迁移可能很简单，只要没有其他服务直接通过数据库集成即可。
+>
 > Unfortunatly, it’s an optimistic assumption when we work with a legacy response/database-centric or CRUD service...
+>
+> 不幸的是，当我们使用遗留响应/以数据库为中心或 CRUD 服务时，这是一个乐观的假设......
 >
 
 ```go
@@ -375,6 +430,8 @@ Source: [hour_firestore_repository.go on GitHub](https://bit.ly/3dwlnX3)
 Unfortunately, the Firebase interfaces for the transactional and non-transactional queries are not fully compatible. To
 avoid duplication, I created `getDateDTO` that can handle this difference by passing `getDocumentFn`.
 
+不幸的是，Firebase 的事务性查询和非事务性查询的接口并不完全兼容。为了避免重复，我创建了 `getDateDTO`，它可以通过传递 `getDocumentFn` 来处理这种差异。
+
 ```go
 package main
 
@@ -400,11 +457,15 @@ Source: [hour_firestore_repository.go on GitHub](https://bit.ly/2M83z9p)
 
 Even if some extra code is needed, it’s not bad. And at least it can be tested easily.
 
-### Updating the data
+即使需要一些额外的代码，也不错。至少它可以很容易地测试。
+
+### Updating the data / 更新数据
 
 As I mentioned before – it’s critical to be sure that **only one person can schedule a training in one hour**. To handle
 that scenario, we need to use **optimistic locking and transactions**. Even if transactions is a pretty common term,
 let’s ensure that we are on the same page with Optimistic Locking.
+
+正如我之前提到的--关键是要确保在一个小时内只有一个人可以安排培训。为了处理这种情况，我们需要使用乐观锁和事务。即使事务是一个相当常见的术语，让我们确保我们与乐观锁定在同一起跑线上。
 
 **Optimistic concurrency control** assumes that many transactions can frequently complete without interfering with each
 other. While running, transactions use data resources without acquiring locks on those resources. Before committing,
