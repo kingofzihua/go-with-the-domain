@@ -879,7 +879,7 @@ func (m MySQLHourRepository) upsertHour(tx *sqlx.Tx, hourToUpdate *hour.Hour) er
 
 Source: [hour_mysql_repository.go on GitHub](https://bit.ly/3dwAgZF)
 
-### Summary
+### Summary / 总结
 
 Even if the repository approach adds a bit more code, it’s totally worth making that investment.
 **In practice, you may spend 5 minutes more to do that, and the investment should pay you back shortly.**
