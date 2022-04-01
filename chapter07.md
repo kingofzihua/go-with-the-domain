@@ -472,17 +472,25 @@ other. While running, transactions use data resources without acquiring locks on
 each transaction verifies that no other transaction has modified the data it has read. If the check reveals conflicting
 modifications, the committing transaction rolls back and can be restarted.
 
+__乐观并发控制__ 假设许多事务可以频繁完成而不会相互干扰。在运行时，事务使用数据资源而不获取这些资源的锁。在提交之前，每个事务都验证没有其他事务修改它已读取的数据。如果检查发现有冲突的修改，提交事务会回滚并重新启动。
+
 wikipedia.org (https://en.wikipedia.org/wiki/Optimistic_concurrency_control)
 
 Technically transactions handling is not complicated. The biggest challenge that I had was a bit different – how to
 manage transactions in a clean way that does not affect the rest of the application too much, is not dependent on the
 implementation, and is explicit and fast.
 
+从技术上讲，事务处理并不复杂。我所面临的最大挑战有点不同--如何以一种干净的方式管理事务，不对应用程序的其他部分造成太大影响，不依赖于实现，并且是明确和快速的。
+
 I experimented with many ideas, like passing transaction via context.Context, handing transaction on HTTP/gRPC/message
 middlewares level, etc. All approaches that I tried had many major issues – they were a bit magical, not explicit, and
 slow in some cases.
 
+我尝试了很多想法，比如通过 context.Context 传递事务，在 HTTP / gRPC / 消息中间件 层面传递事务，等等。我所尝试的所有方法都有很多主要问题--它们有点神奇，不明确，而且在某些情况下很慢。
+
 Currently, my favorite one is an approach based on closure passed to the update function.
+
+目前，我最喜欢的是一种基于传递给更新函数的闭合的方法。
 
 ```go
 package hour
@@ -500,6 +508,8 @@ Source: [repository.go on GitHub](https://bit.ly/3bo6QtT)
 
 The basic idea is that we when we run `UpdateHour`, we need to provide `updateFn` that can update the provided hour.
 
+基本思想是我们在运行 `UpdateHour` 时，需要提供 `updateFn` 来更新提供的小时。
+
 So in practice in one transaction we:
 
 - get and provide all parameters for `updateFn` (`h *Hour` in our case) based on provided UUID or any other parameter (
@@ -508,7 +518,16 @@ So in practice in one transaction we:
 - save return values (`*Hour` in our case, if needed we can return more)
 - execute a rollback in case of an error returned from the closure
 
+所以在实践中，我们在一笔交易中：
+
+- 根据提供的UUID或任何其他参数（在我们的例子中是 `hourTime.Time` ），获取并提供 `updateFn` 的所有参数（`h *Hour`）。
+- 执行闭包（在我们的例子中是 `updateFn` ）
+- 保存返回值（在我们的例子中是 `*Hour` ，如果需要我们可以返回更多）
+- 在闭包返回错误的情况下执行回滚
+
 How is it used in practice?
+
+如何在实践中使用？
 
 ```go
 package main
@@ -540,6 +559,9 @@ As you can see, we get Hour instance from some (unknown!) database. After that, 
 everything is fine, we save the hour by returning it. As part of **Domain-Driven Design Lite** (Chapter 6), **all
 validations were moved to the domain level, so here we are sure that we aren’t doing anything “stupid”. It also
 simplified this code a lot**.
+
+正如你所看到的，我们从某个（未知的！）数据库中获得了Hour实例。之后，我们使这个小时可用。如果一切正常，我们通过返回它来保存这个小时。作为领域驱动设计精简版（第 6
+章）的一部分，所有验证都移到了领域级别，所以在这里我们确信我们没有做任何“愚蠢”的事情。它也大大简化了这段代码。
 
 ```shell
 +func (g GrpcServer) MakeHourAvailable(ctx context.Context, request *trainer.UpdateHourRequest) (*trainer.EmptyResponse, error) {
@@ -590,11 +612,17 @@ Source: [0249977c58a310d343ca2237c201b9ba016b148e on GitHub](https://bit.ly/2ZCK
 In our case from `updateFn` we return only (*Hour, error) – **you can return more values if needed**. You can return
 event sourcing events, read models, etc.
 
+在我们的例子中，从 `updateFn` 中我们只返回（*Hour, error）--如果需要，你可以返回更多的值。你可以返回事件源事件，读取模型，等等。
+
 We can also, in theory, use the same `hour.*Hour`, that we provide to updateFn. I decided to not do that. Using the
 returned value gives us more flexibility (we can replace a different instance of hour.*Hour if we want).
 
+理论上，我们也可以使用我们提供给 `updateFn` 的相同的 `hour.*Hour`。我决定不这么做。使用返回的值给了我们更多的灵活性（如果我们想的话，我们可以替换一个不同的 `hour.*Hour `实例）。
+
 It’s also nothing terrible to have multiple UpdateHour-like functions created with extra data to save. Under the hood,
 the implementation should re-use the same code without a lot of duplication.
+
+使用要保存的额外数据创建多个类似 `UpdateHour` 的函数也没什么可怕的。在幕后，实现应该重复使用相同的代码，而不需要大量重复。
 
 ```go
 package repo
@@ -615,13 +643,19 @@ type Repository interface { // ...
 
 How to implement it now?
 
-#### In-memory transactions implementation
+现在如何实现？
+
+#### In-memory transactions implementation / 内存事务实现
 
 The memory implementation is again the simplest one. We need to get the current value, execute closure, and save the
 result.
 
+内存实现又是最简单的一种。我们需要获取当前值，执行闭包，并保存结果。
+
 What is essential, in the map, we store a copy instead of a pointer. Thanks to that, we are sure that without the
 “commit” (`m.hours[hourTime] = *updatedHour`) our values are not saved. We will double-check it in tests.
+
+最重要的是，在map中，我们存储了一个副本而不是一个指针。多亏了这一点，我们确信没有“提交”（`m.hours[hourTime] = *updatedHour`）我们的值不会被保存。我们将在测试中仔细检查它。
 
 ```go
 package main
@@ -648,11 +682,14 @@ func (m *MemoryHourRepository) UpdateHour(
 
 Source: [hour_memory_repository.go on GitHub](https://bit.ly/2M7RLnC)
 
-#### Firestore transactions implementation
+#### Firestore transactions implementation / Firestore 事务实现
 
 Firestore implementation is a bit more complex, but again – it’s related to backward compatibility. Functions
 `getDateDTO`, `domainHourFromDateDTO`, `updateHourInDataDTO` could be probably skipped when our data model would be
 better. Another reason to not use Database-centric/Response-centric approach!
+
+Firestore的实现要复杂一些，但还是那句话--这与向后兼容有关。当我们的数据模型变得更好时，`getDateDTO`、`domainHourFromDateDTO`、`updateHourInDataDTO等函数可能会被跳过`
+。另一个不使用以数据库为中心/以响应为中心的方法的原因!
 
 ```go
 package main
@@ -692,16 +729,24 @@ Source: [hour_firestore_repository.go on GitHub](https://bit.ly/3keLqU3)
 
 As you can see, we get `*hour.Hour`, call `updateFn`, and save results inside of RunTransaction.
 
+正如你所看到的，我们得到 `*hour.Hour`，调用 `updateFn`，并将结果保存在 `RunTransaction` 中。
+
 **Despite some extra complexity, this implementation is still clear, easy to understand and test.**
 
-#### MySQL transactions implementation
+尽管有一些额外的复杂性，这个实现仍然是清晰的，易于理解和测试。
+
+#### MySQL transactions implementation / MySQL 事务实现
 
 Let’s compare it with MySQL implementation, where we designed models in a better way. Even if the way of implementation
 is similar, the biggest difference is a way of handling transactions.
 
+让我们把它与MySQL的实现进行比较，在那里我们以更好的方式设计模型。即使实现的方式相似，最大的区别是处理事务的方式。
+
 In the SQL driver, the transaction is represented by *db.Tx. We use this particular object to call all queries and do a
 rollback and commit. To ensure that we don’t forget about closing the transaction, we do rollback and commit in
 the `defer`.
+
+在SQL驱动中，事务是由*db.Tx表示的。我们使用这个特殊的对象来调用所有的查询，并做回滚和提交。为了确保我们不会忘记关闭事务，我们在`defer`中做回滚和提交。
 
 ```go
 package main
@@ -740,10 +785,15 @@ In that case, we also get the hour by passing forUpdate == true to getOrCreateHo
 statement to our query. The FOR UPDATE statement is critical because without that, we will allow parallel transactions
 to change the hour.
 
+在这种情况下，我们还可以通过将 forUpdate == true 传递给 getOrCreateHour 来获取小时。该标志将 FOR UPDATE 语句添加到我们的查询中。 FOR UPDATE
+语句很关键，因为没有它，我们将允许并行事务更改小时。
+
 SELECT ... FOR UPDATE
 
 For index records the search encounters, locks the rows and any associated index entries, the same as if you issued an
 UPDATE statement for those rows. Other transactions are blocked from updating those rows.
+
+对于搜索遇到的索引记录，锁住这些行和任何相关的索引条目，就像你为这些行发布UPDATE语句一样。其他事务被阻止更新这些记录。
 
 dev.mysql.com (https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html)
 
@@ -769,8 +819,12 @@ Source: [hour_mysql_repository.go on GitHub](https://bit.ly/3sdIE46)
 
 I never sleep well when I don’t have an automatic test for code like that. Let’s address it later.
 
+当我没有对这样的代码进行自动测试时，我总是睡不好觉。我们以后再解决这个问题吧。
+
 `finishTransaction` is executed, when `UpdateHour` exits. When commit or rollback failed, we can also override the
 returned error.
+
+当 `UpdateHour` 退出时，`finishTransaction` 被执行。当提交或回滚失败时，我们也可以覆盖返回的错误。
 
 ```go
 package main
@@ -830,14 +884,24 @@ Source: [hour_mysql_repository.go on GitHub](https://bit.ly/3dwAgZF)
 Even if the repository approach adds a bit more code, it’s totally worth making that investment.
 **In practice, you may spend 5 minutes more to do that, and the investment should pay you back shortly.**
 
+即使存储库的方法增加了一些代码，也完全值得进行这种投资。**在实践中，你可能会多花5分钟来做这件事，而投资应该很快就能收回。**
+
 In this chapter, we miss one essential part – tests. Now adding tests should be much easier, but it still may not be
 obvious how to do it properly.
+
+在这一章中，我们错过了一个重要部分--测试。现在添加测试应该更容易了，但如何正确地添加测试可能还是不明显。
 
 I will cover tests in the next chapter. The entire diff of this refactoring, including tests,
 is [available on GitHub](https://bit.ly/3qJQ13d).
 
+我将在下一章介绍测试。这次重构的全部内容，包括测试，都可以在 [GitHub上找到](https://bit.ly/3qJQ13d)。
+
 And just to remind – you can also run the application with one [command](./chapter02.md) and find the entire source code
-on [GitHub]( https://github.com/ThreeDotsLabs/wild-workouts-go-ddd-example) !
+on [GitHub](https://github.com/ThreeDotsLabs/wild-workouts-go-ddd-example) !
+
+提醒一下 - 你也可以用一个命令运行应用程序，并在 [GitHub](https://github.com/ThreeDotsLabs/wild-workouts-go-ddd-example) 上找到整个源代码 !
 
 Another technique that works pretty well is Clean/Hexagonal architecture – Miłosz covers that in **Clean Archi-
 tecture** (Chapter 9).
+
+另一种效果很好的技术是 清洁 / 六边形架构 架构 —— Miłosz 在 Clean Architecture（第 9 章）中介绍了这一点。
