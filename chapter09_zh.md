@@ -475,4 +475,4 @@ Source: [hour_service.go on GitHub](https://bit.ly/3pBCSaL)
 
 在下一章中，我们将展示如何通过应用 CQRS 来改进项目。
 
-如果您想了解更多关于清洁架构的信息，请参阅 [什么使用微服务或单体应用只是一个细节](https://threedots.tech/post/microservices-or-monolith-its-detail/) ?
+如果您想了解更多关于清洁架构的信息，请参阅 [为什么使用微服务或单体应用只是一个细节](https://threedots.tech/post/microservices-or-monolith-its-detail/) ?
