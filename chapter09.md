@@ -1,4 +1,4 @@
-## Clean Architecture / 清洁架构
+## Clean Architecture
 
 Miłosz Smółka
 
@@ -31,7 +31,7 @@ There are also other benefits of this approach we noticed:
 - mocking dependencies becomes trivial in unit tests,
 - easy switching from prototypes to proper solutions (e.g., changing in-memory storage to an SQL database).
 
-### Clean Architecture / 清洁架构
+### Clean Architecture
 
 I had a hard time coming up with this chapter’s title because the pattern comes in many flavors. There’s
 [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
